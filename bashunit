@@ -122,7 +122,7 @@ run() {
 
 declare -gA requested_tests=()
 for test in $@; do
-    request_tests["test__${test}"]=1
+    requested_tests["test__${test}"]=1
 done
 
 run
