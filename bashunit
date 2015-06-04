@@ -10,22 +10,21 @@ if [ ${#tests[@]} -eq 0 ]; then
     exit 1
 fi
 
-assert_equals() {
+assert() {
     local name="${1}"; shift
+    local success="${1}"; shift
     local expected="${1}"; shift
     local observed="${1}"; shift
 
-    local success=0
-
     echo -n "Test '${name}': "
-    if [ "${expected}" == "${observed}" ]; then
+    if [ ${success} -eq 0 ]; then
         echo -n 'passed'
     else
         echo -n 'failed'
-        success=1
     fi
 
     echo " - expected '${expected}', observed '${observed}'"
+
     return ${success}
 }
 
