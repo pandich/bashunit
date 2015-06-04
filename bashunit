@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+declare base_dir="$(readlink -f "$(dirname "${0}")")"
+declare passed_count=0
+declare error_count=0
+
+declare -a tests=($(grep -E '^test__\S+()' "${0}" | cut -d'(' -f1))
+if [ ${#tests[@]} -eq 0 ]; then
+    echo "Error: bunit found no tests in '${0}'" > /dev/stderr
+    exit 1
+fi
+
+assert_equals() {
+    local name="${1}"; shift
+    local expected="${1}"; shift
+    local observed="${1}"; shift
+
+    local success=0
+
+    echo -n "Test '${name}': "
+    if [ "${expected}" == "${observed}" ]; then
+        echo -n 'passed'
+    else
+        echo -n 'failed'
+        success=1
+    fi
+
+    echo " - expected '${expected}', observed '${observed}'"
+    return ${success}
+}
+
+_run_if_exists() {
+    [[ "$(declare -Ff "${1}")" ]] && "${1}"
+}
+
+_on_exit() {
+    echo
+    echo "passed: ${passed_count} / errors: ${error_count}"
+    echo
+    if [ -z "${PRESERVE_DATA}" ]; then
+        echo 'cleaning up'
+        rm -rf "${test_data_dir}"
+        echo
+    fi
+    echo "done."
+    exit ${error_count}
+}
+trap _on_exit EXIT
+
+run() {
+    _run_if_exists 'before_script'
+    for test in ${tests[@]}; do
+        _run_if_exists 'before_test'
+        echo "Test ${test} ..."
+        echo '--------------------------------------------------'
+        echo
+        if "${test}"; then
+            passed_count=$(( passed_count + 1 ))
+        else
+            error_count=$(( error_count + 1 ))
+        fi
+        echo
+        _run_if_exists 'after_test'
+    done
+    _run_if_exists 'after_script'
+}
+
+run
