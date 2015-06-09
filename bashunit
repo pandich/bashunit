@@ -35,7 +35,7 @@ alert() {
 _run_if_exists() {
     local kind=$(type -t "${1}" 2> /dev/null)
     if [ "${kind}" == 'function' ]; then
-        "${1}"
+        "${1}" $@
     fi
 }
 
