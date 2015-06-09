@@ -33,9 +33,10 @@ alert() {
 }
 
 _run_if_exists() {
-    local kind=$(type -t "${1}" 2> /dev/null)
+    local name="${1}"; shift
+    local kind=$(type -t "${name}" 2> /dev/null)
     if [ "${kind}" == 'function' ]; then
-        "${1}" $@
+        "${name}" $@
     fi
 }
 
