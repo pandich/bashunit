@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 base_dir="$(readlink -f "$(dirname "${0}")")"
 passed_count=0
-error_count=0
+failed_count=0
 
 _color_red=1
 _color_green=2
@@ -41,10 +41,10 @@ _on_exit() {
     echo -n 'passed: '
     echo -n $(_color ${_color_green} $(_bold "${passed_count}"))
     echo -n ' / errors: '
-    echo $(_color ${_color_red} $(_bold "${error_count}"))
+    echo $(_color ${_color_red} $(_bold "${failed_count}"))
     echo
     echo $(_color ${_color_yellow} $(_bold 'done.'))
-    exit ${error_count}
+    exit ${failed_count}
 }
 trap _on_exit EXIT
 
@@ -104,7 +104,7 @@ run() {
             passed_count=$(( passed_count + 1 ))
         else
             passed=0
-            error_count=$(( error_count + 1 ))
+            failed_count=$(( failed_count + 1 ))
         fi
         echo
         echo -n '[ test '
@@ -117,9 +117,9 @@ run() {
         echo
         echo
 
-        _run_if_exists 'after_test'
+        _run_if_exists 'after_test' ${passed}
     done
-    _run_if_exists 'after_script'
+    _run_if_exists 'after_script' ${passed_count} ${failed_count}
 }
 
 run $@
