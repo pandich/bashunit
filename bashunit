@@ -104,16 +104,16 @@ run() {
         echo -n 'starting test: '
         echo $(_color ${_color_blue} "${name}")
         echo $(_color ${_color_white} '--------------------------------------------------')
-        local passed=1
+        local passed=0
         if ${test}; then
             passed_count=$(( passed_count + 1 ))
         else
-            passed=0
+            passed=1
             failed_count=$(( failed_count + 1 ))
         fi
         echo
         echo -n '[ test '
-        if [ ${passed} -eq 1 ]; then
+        if [ ${passed} -eq 0 ]; then
             echo -n $(_color ${_color_green} $(_bold 'passed'))
         else
             echo -n $(_color ${_color_red} $(_bold 'failed'))
