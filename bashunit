@@ -28,6 +28,10 @@ _color() {
     tput setaf 9
 }
 
+alert() {
+    echo "$(_color ${_color_red} "$(_bold $@)")"
+}
+
 _run_if_exists() {
     local kind=$(type -t "${1}" 2> /dev/null)
     if [ "${kind}" == 'function' ]; then
