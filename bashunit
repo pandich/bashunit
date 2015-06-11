@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
+
+
 base_dir="$(readlink -f "$(dirname "${0}")")"
 passed_count=0
 failed_count=0
+
+_test_prefix='test__'
 
 _color_red=1
 _color_green=2
@@ -9,7 +13,7 @@ _color_yellow=3
 _color_blue=4
 _color_white=7
 
-tests=($(grep -E '^test__' "${0}" | cut -d'(' -f1))
+tests=($(grep -E "^${_test_prefix}" "${0}" | cut -d'(' -f1 | sed "s/${_test_prefix}//"))
 if [ ${#tests[@]} -eq 0 ]; then
     echo "Error: bunit found no tests in '${0}'" > /dev/stderr
     exit 1
@@ -98,14 +102,12 @@ run() {
     for test in ${tests_to_run[@]}; do
         _run_if_exists 'before_test'
 
-        local name="$(echo "${test}" | sed 's/^test__//')"
-
         echo $(_color ${_color_white} '--------------------------------------------------')
         echo -n 'starting test: '
-        echo $(_color ${_color_blue} "${name}")
+        echo $(_color ${_color_blue} "${test}")
         echo $(_color ${_color_white} '--------------------------------------------------')
         local passed=0
-        if ${test}; then
+        if "${_test_prefix}${test}"; then
             passed_count=$(( passed_count + 1 ))
         else
             passed=1
