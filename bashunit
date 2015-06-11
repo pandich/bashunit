@@ -13,7 +13,7 @@ _color_yellow=3
 _color_blue=4
 _color_white=7
 
-tests=($(grep -E "^${_test_prefix}" "${0}" | cut -d'(' -f1 | sed "s/${_test_prefix}//"))
+tests=($(grep -E "^${_test_prefix}" "${0}" | sed "s/${_test_prefix}\(.\+\)().*$/\1/"))
 if [ ${#tests[@]} -eq 0 ]; then
     echo "Error: bunit found no tests in '${0}'" > /dev/stderr
     exit 1
@@ -90,7 +90,7 @@ run() {
     if [ ${#} -eq 0 ]; then
         tests_to_run=(${tests[@]})
     else
-        tests_to_run=(${@})
+        tests_to_run=($(echo ${@} | sed 's/ \+/\n/g' | sed "s/${_test_prefix}//g" | sort -u))
     fi
 
     echo -n "$(_color ${_color_yellow} "$(_bold "BASHUnit Start:")") -- "
