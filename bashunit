@@ -2,16 +2,23 @@
 
 
 base_dir="$(readlink -f "$(dirname "${0}")")"
-passed_count=0
-failed_count=0
+_tests_passed=0
+_tests_failed=0
+_asserts_passed=0
+_asserts_failed=0
+
 
 _test_prefix='test__'
 
+_color_black=0
 _color_red=1
 _color_green=2
 _color_yellow=3
 _color_blue=4
+_color_magenta=5
+_color_cyan=6
 _color_white=7
+_color_default=9
 
 tests=($(grep -E "^${_test_prefix}" "${0}" | sed "s/${_test_prefix}\(.\+\)().*$/\1/"))
 if [ ${#tests[@]} -eq 0 ]; then
@@ -29,7 +36,7 @@ _color() {
     local color=$1; shift
     tput setaf "${color}"
     echo -n $@
-    tput setaf 9
+    tput setaf "${_color_default}"
 }
 
 alert() {
@@ -45,15 +52,13 @@ _run_if_exists() {
 }
 
 _on_exit() {
-    echo $(_color ${_color_white} $(_bold 'Summary:'))
+    echo -n $(_color ${_color_white} $(_bold 'bashunit summary:'))
+    echo -n ' tests passed: '
+    echo -n $(_color ${_color_green} $(_bold "${_tests_passed}"))
+    echo -n ' / failed: '
+    echo $(_color ${_color_red} $(_bold "${_tests_failed}"))
     echo
-    echo -n 'passed: '
-    echo -n $(_color ${_color_green} $(_bold "${passed_count}"))
-    echo -n ' / errors: '
-    echo $(_color ${_color_red} $(_bold "${failed_count}"))
-    echo
-    echo $(_color ${_color_yellow} $(_bold 'done.'))
-    exit ${failed_count}
+    exit ${_tests_failed}
 }
 trap _on_exit EXIT
 
@@ -63,25 +68,35 @@ assert() {
     local operator="${1}"; shift
     local observed="${1}"; shift
 
-    echo -n "assertion '"
-    echo -n $(_color ${_color_white} "${name}")
-    echo -n "': "
+    local assertion_string="'${expected}' ${operator} '${observed}'"
+
     $(eval "[ '${expected}' ${operator} '${observed}' ] && true || false")
-    if [ ${?} -eq 0 ]; then
-        success=0
-        echo -n $(_color ${_color_green} $(_bold 'passed'))
+    local success=$?
+
+    if [ ${success} -eq 0 ]; then
+        _asserts_passed=$(( _asserts_passed + 1 ))
     else
-        success=1
-        echo -n $(_color ${_color_red} $(_bold 'failed'))
+        _asserts_failed=$(( _asserts_failed + 1 ))
     fi
 
-    echo -n $(_color ${_color_white} " - expected '")
-    echo -n $(_color ${_color_yellow} "${expected}")
-    echo -n $(_color ${_color_white} "' - observed '")
-    echo -n $(_color ${_color_yellow} "${observed}")
-    echo -n $(_color ${_color_white} "'")
-    echo
-    echo
+    if [ ${success} -eq 1 ] || [ "${BASHUNIT_SHOW_SUCCESS}" == 'true'  ]; then
+        echo
+        echo -ne '\t'
+        if [ ${success} -eq 0 ]; then
+            echo -n $(_color ${_color_green} $(_bold 'passed'))
+        else
+            echo -n $(_color ${_color_red} $(_bold 'failed'))
+        fi
+        echo -n ': '
+
+        echo $(_color ${_color_white} "$(_bold "${name}")")
+
+        echo -ne '\t'
+        echo -n $(_color ${_color_yellow} "$(_bold 'assert')")
+        echo -n ' '
+        echo -n $(_color ${_color_cyan} "$(_bold "${assertion_string}")")
+        echo
+    fi
 
     return ${success}
 }
@@ -102,31 +117,36 @@ run() {
     for test in ${tests_to_run[@]}; do
         _run_if_exists 'before_test'
 
-        echo $(_color ${_color_white} '--------------------------------------------------')
-        echo -n 'starting test: '
-        echo $(_color ${_color_blue} "${test}")
-        echo $(_color ${_color_white} '--------------------------------------------------')
+        _asserts_passed=0
+        _asserts_failed=0
+
+        echo -n "$(_color ${_color_magenta} "$(_bold 'running:')")"
+        echo -n ' '
+        echo $(_color ${_color_blue} "$(_bold "${test//_/ }:")")
         local passed=0
         if "${_test_prefix}${test}"; then
-            passed_count=$(( passed_count + 1 ))
+            _tests_passed=$(( _tests_passed + 1 ))
         else
             passed=1
-            failed_count=$(( failed_count + 1 ))
+            _tests_failed=$(( _tests_failed + 1 ))
         fi
+
         echo
-        echo -n '[ test '
-        if [ ${passed} -eq 0 ]; then
-            echo -n $(_color ${_color_green} $(_bold 'passed'))
-        else
-            echo -n $(_color ${_color_red} $(_bold 'failed'))
-        fi
-        echo ' ]'
+        echo -ne '\t'
+        echo -n $(_color ${_color_white} $(_bold "results:"))
+        echo -n ' assertions passed: '
+        echo -n $(_color ${_color_green} $(_bold "${_asserts_passed}"))
+        echo -n ' / failed: '
+        echo $(_color ${_color_red} $(_bold "${_asserts_failed}"))
+        echo
         echo
         echo
 
         _run_if_exists 'after_test' ${passed}
     done
-    _run_if_exists 'after_script' ${passed_count} ${failed_count}
+
+    _run_if_exists 'after_script' ${_tests_passed} ${_tests_failed}
 }
 
+clear
 run $@
